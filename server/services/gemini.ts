@@ -1,3 +1,11 @@
+import dns from 'node:dns';
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {
+  // Older Node runtimes may not support changing DNS result order.
+}
+
 export function isRetryableGeminiError(error: any) {
   const message = String(error?.message || error || '');
   const causeCode = error?.cause?.code || error?.code;
