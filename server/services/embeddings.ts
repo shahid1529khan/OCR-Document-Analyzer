@@ -2,7 +2,7 @@ export async function generateEmbeddings(textChunks: string[]): Promise<number[]
   if (!textChunks.length) return [];
 
   if (!process.env.VOYAGE_API_KEY) {
-    console.warn('[embeddings] VOYAGE_API_KEY not set — using mock vectors. Chat/RAG will not work correctly.');
+    console.warn('[embeddings] VOYAGE_API_KEY not set - using mock vectors. Chat falls back to OCR text.');
     return textChunks.map(() => Array.from({ length: 1024 }, () => Math.random() * 0.02 - 0.01));
   }
 
@@ -17,7 +17,6 @@ export async function generateEmbeddings(textChunks: string[]): Promise<number[]
   return data.data.map((d: any) => d.embedding as number[]);
 }
 
-// Fixed: was /\\s+/ (splits on literal \s) — now correctly splits on whitespace
 export function chunkText(text: string, chunkSize = 400, overlap = 50): string[] {
   if (!text?.trim()) return [];
   const words = text.split(/\s+/).filter(Boolean);

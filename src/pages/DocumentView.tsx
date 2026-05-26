@@ -4,11 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Send, FileText, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 
+interface Citation {
+  index: number;
+  documentId?: string;
+  documentTitle?: string;
+  pageNumber?: number;
+  excerpt?: string;
+}
+
 export function DocumentView() {
   const { id } = useParams();
   const { session } = useAuthStore();
   const [query, setQuery] = useState('');
-  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'assistant', content: string, citations?: number[]}[]>([]);
+  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'assistant', content: string, citations?: Citation[]}[]>([]);
   const [isChatting, setIsChatting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -137,9 +145,9 @@ export function DocumentView() {
                 {msg.citations && msg.citations.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-1">
                     <span className="text-[10px] text-gray-400 uppercase tracking-wider mr-1 my-auto">Sources:</span>
-                    {[...new Set(msg.citations)].map((cite: any, i) => (
-                      <span key={i} className="inline-flex items-center text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-sm">
-                         Page {cite}
+                    {msg.citations.map((cite) => (
+                      <span key={cite.index} className="inline-flex items-center text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-sm">
+                        {cite.pageNumber ? `Page ${cite.pageNumber}` : `[${cite.index}]`}
                       </span>
                     ))}
                   </div>

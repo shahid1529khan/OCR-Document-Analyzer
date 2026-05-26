@@ -1,6 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import dns from 'node:dns';
 import dotenv from 'dotenv';
 dotenv.config();
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {
+  // Older Node runtimes may not support changing DNS result order.
+}
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
