@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { callGeminiWithRetry } from './gemini.js';
 
 interface TranslationResult {
   detectedLanguage: string;
@@ -6,18 +7,6 @@ interface TranslationResult {
   originalText: string;
   translatedText: string;
   wasTranslated: boolean;
-}
-
-async function callWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> {
-  try { return await fn(); }
-  catch (err: any) {
-    const isRate = err?.status === 429 || String(err?.message || '').includes('429');
-    if (retries > 0 && isRate) {
-      await new Promise(r => setTimeout(r, delay));
-      return callWithRetry(fn, retries - 1, delay * 2);
-    }
-    throw err;
-  }
 }
 
 export async function detectAndTranslate(
@@ -34,12 +23,13 @@ export async function detectAndTranslate(
   const ai = new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } });
 
   try {
-    const response = await callWithRetry(() =>
+    const response = await callGeminiWithRetry(() =>
       ai.models.generateContent({
         model,
         contents: `Detect the language and translate to English if needed. Reply ONLY with JSON, no markdown.\n\nJSON schema: {"detectedLanguage":"ISO 639-1 code","languageName":"Human readable","translatedText":"English text or original if already English","wasTranslated":true/false}\n\nText:\n---\n${text.substring(0, 8000)}\n---`,
         config: { responseMimeType: 'application/json' },
-      })
+      }),
+      'gemini-translation'
     );
     const parsed = JSON.parse((response.text || '{}').trim());
     return {

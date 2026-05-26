@@ -32,11 +32,14 @@ CREATE TABLE IF NOT EXISTS documents (
   file_size BIGINT NOT NULL DEFAULT 0,
   page_count INT DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'uploaded',
+  last_error TEXT,
   language TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS last_error TEXT;
 
 CREATE TABLE IF NOT EXISTS pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

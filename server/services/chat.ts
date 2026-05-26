@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { dbMatchAcrossReports, dbMatchPageChunks } from '../db/supabaseDb.js';
 import { generateEmbeddings } from './embeddings.js';
+import { callGeminiWithRetry } from './gemini.js';
 
 interface ChatAnswerInput {
   query: string;
@@ -8,20 +9,6 @@ interface ChatAnswerInput {
   reportIds?: string[];
   apiKey?: string;
   model?: string;
-}
-
-async function callWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> {
-  try {
-    return await fn();
-  } catch (err: any) {
-    const message = String(err?.message || '');
-    const isRateLimited = err?.status === 429 || message.includes('429') || message.includes('RESOURCE_EXHAUSTED');
-    if (retries > 0 && isRateLimited) {
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return callWithRetry(fn, retries - 1, delay * 2);
-    }
-    throw err;
-  }
 }
 
 export async function answerDocumentQuestion({ query, documentId, reportIds, apiKey, model }: ChatAnswerInput) {
@@ -38,7 +25,10 @@ export async function answerDocumentQuestion({ query, documentId, reportIds, api
   if (apiKey) {
     const ai = new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } });
     const prompt = `You are a document analysis assistant. Answer using ONLY the context below. Cite sources as [1], [2] etc. If the answer is not in the context, say so clearly.\n\nContext:\n${contextStr}\n\nQuestion: ${query}`;
-    const response = await callWithRetry(() => ai.models.generateContent({ model: model || 'gemini-1.5-flash', contents: prompt }));
+    const response = await callGeminiWithRetry(
+      () => ai.models.generateContent({ model: model || 'gemini-1.5-flash', contents: prompt }),
+      'gemini-chat'
+    );
     answer = response.text || 'No response generated.';
   }
 

@@ -1,32 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
-});
-
-async function callGeminiWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> {
-  try {
-    return await fn();
-  } catch (error: any) {
-    const errorStr = String(error?.message || error);
-    const isRateLimit = error?.status === 429 || 
-                        errorStr.includes('429') || 
-                        errorStr.includes('Quota exceeded') || 
-                        errorStr.includes('RESOURCE_EXHAUSTED');
-    if (retries > 0 && isRateLimit) {
-      console.warn(`Gemini rate limited: ${errorStr.substring(0, 150)}. Retrying in ${delay}ms... (${retries} retries left)`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return callGeminiWithRetry(fn, retries - 1, delay * 2);
-    }
-    throw error;
-  }
-}
+import { callGeminiWithRetry } from './gemini.js';
 
 // Bulletproof preprocessor for page source refs to avoid crashes when undefined/null/empty/non-numeric
 const FlexiblePageSourceRef = z.preprocess((val) => {
@@ -132,7 +106,8 @@ ${pagesText}
             required: ["events", "entities"]
           }
         },
-      })
+      }),
+      'gemini-extraction'
     );
 
     const text = response.text;

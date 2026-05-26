@@ -3,6 +3,7 @@ import { processOcr }            from './ocr.js';
 import { detectAndTranslate }    from './translation.js';
 import { extractStructuredData } from './extraction.js';
 import { chunkText, generateEmbeddings } from './embeddings.js';
+import { formatGeminiError } from './gemini.js';
 
 export async function processDocumentWorkflow(
   documentId: string,
@@ -13,7 +14,7 @@ export async function processDocumentWorkflow(
 ) {
   try {
     console.log(`[pipeline] Starting for ${documentId}`);
-    await dbUpdateDocument(documentId, { status: 'processing' });
+    await dbUpdateDocument(documentId, { status: 'processing', last_error: null });
 
     const docData = await dbGetDocument(documentId);
     if (!docData) throw new Error('Document record not found');
@@ -85,6 +86,6 @@ export async function processDocumentWorkflow(
     console.log(`[pipeline] Completed ${documentId}`);
   } catch (err) {
     console.error(`[pipeline] Failed ${documentId}:`, err);
-    await dbUpdateDocument(documentId, { status: 'failed' });
+    await dbUpdateDocument(documentId, { status: 'failed', last_error: formatGeminiError(err) });
   }
 }

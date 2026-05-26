@@ -460,7 +460,7 @@ export function Dashboard() {
                     <span>•</span>
                     <span>{new Date(doc.created_at).toLocaleDateString()}</span>
                   </div>
-                  <PipelineProgress status={doc.status} />
+                  <PipelineProgress status={doc.status} errorMessage={doc.last_error} />
                 </div>
                 <div className="ml-4">
                   <StatusBadge status={doc.status} />
@@ -493,7 +493,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function PipelineProgress({ status }: { status: string }) {
+function PipelineProgress({ status, errorMessage }: { status: string; errorMessage?: string | null }) {
   const detail = statusDetails[status] || statusDetails.uploaded;
   const activeIndex = status === 'failed'
     ? pipelineStages.indexOf('indexing')
@@ -522,6 +522,9 @@ function PipelineProgress({ status }: { status: string }) {
         })}
       </div>
       <p className="text-xs text-gray-500 mt-1.5">{detail.description}</p>
+      {status === 'failed' && errorMessage && (
+        <p className="text-xs text-red-600 mt-1.5 max-w-2xl">{errorMessage}</p>
+      )}
     </div>
   );
 }
